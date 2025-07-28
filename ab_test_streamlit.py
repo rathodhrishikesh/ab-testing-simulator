@@ -103,7 +103,7 @@ if run_analysis and df is not None:
         st.success("App ready. Share insights or plug into referral strategy!")
 
 elif not run_analysis and df is not None:
-    st.info("✅ Configure your test and click **Run Simulation** to generate results.")
+    st.info("Configure your test and click **Run Simulation** to generate results.")
 
 elif not df:
     st.warning("⚠️ Please upload a file or generate dummy data to continue.")
