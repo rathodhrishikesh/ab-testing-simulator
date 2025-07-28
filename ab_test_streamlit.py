@@ -74,12 +74,17 @@ if run_analysis and df is not None:
         st.subheader("User Data Preview")
         st.dataframe(df.head(100))
 
-        st.subheader("Conversion Summary")
+        # Group and calculate summary
         conv_summary = df.groupby("variant")["converted"].agg(["count", "sum"])
-        conv_summary["conversion_rate"] = (conv_summary["sum"] / conv_summary["count"]) * 100
+        conv_summary["Conversion Rate (%)"] = (conv_summary["sum"] / conv_summary["count"]) * 100
         conv_summary.columns = ["Users", "Conversions", "Conversion Rate (%)"]
+        
+        # Replace A/B with custom names
+        conv_summary = conv_summary.rename(index={"A": variant_a, "B": variant_b})
+        
+        # Show result
         st.dataframe(conv_summary.reset_index())
-
+    
     with tab2:
         st.subheader("Conversion Rate Comparison")
         chart_data = df.groupby("variant")["converted"].mean().reset_index()
