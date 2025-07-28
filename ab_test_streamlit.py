@@ -24,7 +24,7 @@ def generate_dummy_data(num_users=1000):
 # App Start
 # ----------------------
 st.set_page_config(page_title="A/B Testing Dashboard", layout="wide")
-st.title("📊 A/B Testing Program - Referral Engine")
+st.title("📊 A/B Testing Simulator")
 
 # Sidebar - Configuration
 st.sidebar.header("🔧 Configuration")
