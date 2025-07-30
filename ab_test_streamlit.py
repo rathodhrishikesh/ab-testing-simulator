@@ -1,22 +1,26 @@
-# streamlit run ab_test_streamlit_v3.py
+# streamlit run ab_test_streamlit_v4.py
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+from scipy.stats import chi2_contingency
 
 # ----------------------
 # Dummy Data Generator
 # ----------------------
-def generate_dummy_data(num_users=1000):
-    np.random.seed(42)
+def generate_dummy_data(num_users=1000, use_seed=True):
+    if use_seed:
+        np.random.seed(42)
     data = {
         "user_id": [f"user_{i}" for i in range(num_users)],
         "age": np.random.randint(18, 65, size=num_users),
         "location": np.random.choice(["US", "IN", "UK", "CA"], size=num_users),
         "device": np.random.choice(["Mobile", "Desktop"], size=num_users),
         "click_rate": np.random.rand(num_users),
-        "converted": np.random.choice([0, 1], size=num_users, p=[0.85, 0.15])
+        "converted": np.random.choice([0, 1], size=num_users, p=[0.85, 0.15]),
+        "engaged": np.random.choice([0, 1], size=num_users, p=[0.3, 0.7]),
+        "signed_up": np.random.choice([0, 1], size=num_users, p=[0.5, 0.5])
     }
     return pd.DataFrame(data)
 
@@ -30,12 +34,15 @@ st.title("📊 A/B Testing Simulator")
 st.sidebar.header("🔧 Configuration")
 data_option = st.sidebar.radio("Choose Data Source", ["Generate Dummy Data", "Upload CSV"])
 
+st.sidebar.markdown("---")
+use_seed = st.sidebar.toggle("Use fixed random seed (42)?", value=True)
+
 df = None
 file_uploaded = False
 
 if data_option == "Generate Dummy Data":
     num_users = st.sidebar.number_input("Number of Users", min_value=100, max_value=5000, value=1000, step=100)
-    df = generate_dummy_data(int(num_users))
+    df = generate_dummy_data(int(num_users), use_seed=use_seed)
 
 else:
     uploaded_file = st.sidebar.file_uploader(
@@ -74,31 +81,46 @@ if run_analysis and df is not None:
         st.subheader("User Data Preview")
         st.dataframe(df.head(100))
 
-        # Group and calculate summary
-        conv_summary = df.groupby("variant")["converted"].agg(["count", "sum"])
-        conv_summary["Conversion Rate (%)"] = (conv_summary["sum"] / conv_summary["count"]) * 100
-        conv_summary.columns = ["Users", "Conversions", "Conversion Rate (%)"]
-        
-        # Replace A/B with custom names
-        conv_summary = conv_summary.rename(index={"A": variant_a, "B": variant_b})
-        
-        # Show result
-        st.dataframe(conv_summary.reset_index())
-    
+        # Group and calculate metrics
+        metrics = df.groupby("variant").agg({
+            "converted": ["count", "sum", "mean"],
+            "engaged": "mean",
+            "signed_up": "mean"
+        })
+        metrics.columns = ["Users", "Conversions", "Conversion Rate (%)", "Engagement Rate (%)", "Signup Rate (%)"]
+        metrics["Conversion Rate (%)"] *= 100
+        metrics["Engagement Rate (%)"] *= 100
+        metrics["Signup Rate (%)"] *= 100
+        metrics = metrics.rename(index={"A": variant_a, "B": variant_b})
+
+        st.dataframe(metrics.reset_index())
+
+        # Statistical significance
+        st.subheader("Statistical Significance: Conversion Rates")
+        cont_table = pd.crosstab(df["variant"], df["converted"])
+        chi2, p, dof, expected = chi2_contingency(cont_table)
+
+        significance_result = "✅ Statistically Significant" if p < 0.05 else "⚠️ Not Statistically Significant"
+
+        st.markdown(f"**p-value:** {p:.4f} — {significance_result}")
+
     with tab2:
         st.subheader("Conversion Rate Comparison")
         chart_data = df.groupby("variant")["converted"].mean().reset_index()
         chart_data["converted"] *= 100
         fig = px.bar(chart_data, x="variant", y="converted", color="variant",
                      labels={"converted": "Conversion Rate (%)", "variant": "Variant"},
-                     title="A/B Test Results")
+                     title="A/B Test: Conversion Rates")
         st.plotly_chart(fig, use_container_width=True)
 
-        st.subheader("User Distribution by Location")
-        location_data = df.groupby(["variant", "location"]).size().reset_index(name="count")
-        fig2 = px.bar(location_data, x="location", y="count", color="variant", barmode="group",
-                      title="User Distribution by Location")
-        st.plotly_chart(fig2, use_container_width=True)
+        st.subheader("Engagement and Signup Rate Comparison")
+        for metric in ["engaged", "signed_up"]:
+            chart_data = df.groupby("variant")[metric].mean().reset_index()
+            chart_data[metric] *= 100
+            fig = px.bar(chart_data, x="variant", y=metric, color="variant",
+                         labels={metric: f"{metric.replace('_', ' ').title()} (%)", "variant": "Variant"},
+                         title=f"A/B Test: {metric.replace('_', ' ').title()} Rate")
+            st.plotly_chart(fig, use_container_width=True)
 
     with tab3:
         st.subheader("Download Data")
