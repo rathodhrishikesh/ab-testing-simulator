@@ -35,6 +35,7 @@ I built this interactive web app using **Python, Streamlit, Numpy, Pandas, and P
 * **Variant A outperforms Variant B** in terms of conversion rate: **15.4% vs. 12.8%**
 * Although both variants had an equal sample size of 1000 users, a small reward increase of just \$5 led to a **2.6% uplift in conversions**.
 
+![Output Scenario 1](./assets/Output Scenario 1.png)
 ---
 
 ## 📊 Example Scenario 2
@@ -48,7 +49,8 @@ I built this interactive web app using **Python, Streamlit, Numpy, Pandas, and P
 
 * **Variant A performs slightly better** than Variant B in terms of conversion rate: **13.11% vs. 11.67%**
 * Although the sample size for Variant A is 3x larger than B, the uplift in conversion rate is still modest.
-  
+
+![Output Scenario 2](./assets/Output Scenario 2.png)
 ---
 
 ## 🚀 Try It Out
